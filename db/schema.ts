@@ -41,9 +41,31 @@ export const todos = pgTable('todos', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 })
 
+/**
+ * Tabla de sesiones activas
+ * Gestiona tokens JWT y validez de sesiones
+ */
+export const sessions = pgTable('sessions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+
+  token: varchar('token', { length: 500 }).notNull().unique(),
+
+  // Control de expiración
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+
+  // Información del dispositivo/navegador para auditoría
+  userAgent: varchar('user_agent', { length: 500 }),
+  ipAddress: varchar('ip_address', { length: 45 }),
+})
+
 // Relaciones
 export const usersRelations = relations(users, ({ many }) => ({
-  todos: many(todos)
+  todos: many(todos),
+  sessions: many(sessions)
 }))
 
 export const todosRelations = relations(todos, ({ one }) => ({
@@ -53,8 +75,17 @@ export const todosRelations = relations(todos, ({ one }) => ({
   })
 }))
 
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id]
+  })
+}))
+
 // Tipos TypeScript inferidos
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Todo = typeof todos.$inferSelect
 export type NewTodo = typeof todos.$inferInsert
+export type Session = typeof sessions.$inferSelect
+export type NewSession = typeof sessions.$inferInsert
