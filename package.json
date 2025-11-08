@@ -15,10 +15,15 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.44.7",
