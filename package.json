@@ -18,6 +18,11 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.44.7",
+    "jsonwebtoken": "^9.0.2",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"
