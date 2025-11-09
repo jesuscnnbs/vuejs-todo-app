@@ -15,7 +15,7 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <div class="navbar bg-base-100 shadow-lg">
+  <div class="navbar bg-base-100 border-b-2 border-primary/20">
     <div class="navbar-start">
       <div class="dropdown">
         <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
@@ -36,7 +36,7 @@ const handleLogout = async () => {
         </div>
         <ul
           tabindex="0"
-          class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+          class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
         >
           <li><RouterLink to="/">Home</RouterLink></li>
           <li v-if="isAuthenticated"><RouterLink to="/dashboard">Dashboard</RouterLink></li>
@@ -48,9 +48,11 @@ const handleLogout = async () => {
 
     <div class="navbar-center hidden lg:flex">
       <ul class="menu menu-horizontal px-1">
-        <li><RouterLink to="/">Home</RouterLink></li>
-        <li v-if="isAuthenticated"><RouterLink to="/dashboard">Dashboard</RouterLink></li>
-        <li v-if="isAdmin"><RouterLink to="/admin">Admin</RouterLink></li>
+        <li><RouterLink to="/" class="btn btn-link">Home</RouterLink></li>
+        <li v-if="isAuthenticated">
+          <RouterLink to="/dashboard" class="btn btn-link">Dashboard</RouterLink>
+        </li>
+        <li v-if="isAdmin"><RouterLink to="/admin" class="btn btn-link">Admin</RouterLink></li>
       </ul>
     </div>
 
@@ -63,13 +65,13 @@ const handleLogout = async () => {
       <template v-else>
         <div class="dropdown dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
-            <div class="bg-neutral text-neutral-content w-10 rounded-full">
+            <div class="bg-neutral text-neutral-content w-8 rounded-full">
               <span class="text-xl">{{ userName.charAt(0).toUpperCase() }}</span>
             </div>
           </div>
           <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow"
           >
             <li class="menu-title">
               <span>{{ userName }}</span>

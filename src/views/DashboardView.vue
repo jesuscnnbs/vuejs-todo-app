@@ -1,26 +1,30 @@
-<template>
-  <div>
-    <h1>Dashboard</h1>
-    <div class="content">
-      <p>This is the Dashboard page content</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-// Composition API imports if needed
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useTodosStore } from '@/stores/todos'
+import TodoList from '@/components/TodoList.vue'
 
-// Component logic here
-const pageTitle = ref('Dashboard View')
+const authStore = useAuthStore()
+const todosStore = useTodosStore()
 
-onMounted(() => {
-  console.log('Dashboard view component mounted')
+onMounted(async () => {
+  await todosStore.fetchTodos()
 })
 </script>
 
-<style scoped>
-.content {
-  margin-top: 20px;
-}
-</style>
+<template>
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Welcome Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold mb-2">
+        Welcome back, {{ authStore.user?.name }}! 👋
+      </h1>
+      <p class="text-base-content/60">
+        Manage your tasks and stay productive
+      </p>
+    </div>
+
+    <!-- Todo List -->
+    <TodoList />
+  </div>
+</template>
