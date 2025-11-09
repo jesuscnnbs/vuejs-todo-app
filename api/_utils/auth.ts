@@ -1,7 +1,6 @@
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import type { VercelRequest } from '@vercel/node'
-
 interface JWTPayload {
   userId: number
   email: string
@@ -37,16 +36,27 @@ export function verifyToken(req: VercelRequest): JWTPayload | null {
   const authHeader = req.headers.authorization
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('[VERIFY] No se encontró header de autorización o no tiene Bearer')
     return null
   }
 
   const token = authHeader.substring(7) // Remover "Bearer "
 
+  console.log('[VERIFY] Token extraído:', token.substring(0, 20) + '...')
+  console.log('[VERIFY] JWT_SECRET presente:', !!process.env.JWT_SECRET)
+
+  if (!token || token.trim() === '') {
+    console.log('[VERIFY] Token vacío')
+    return null
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload
+    console.log('[VERIFY] Token verificado exitosamente para usuario:', decoded.userId)
     return decoded
   } catch (error) {
-    console.error('Error verificando token:', error)
+    console.error('[VERIFY] Error verificando token:', error)
+    console.error('[VERIFY] Token completo:', token)
     return null
   }
 }
@@ -59,11 +69,22 @@ export function verifyToken(req: VercelRequest): JWTPayload | null {
  * @returns Token JWT firmado
  */
 export function generateToken(userId: number, email: string, role: string): string {
-  return jwt.sign(
-    { userId, email, role },
-    process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  )
+  const secret = process.env.JWT_SECRET
+
+  if (!secret) {
+    throw new Error('JWT_SECRET no está configurado en las variables de entorno')
+  }
+
+  console.log('[GENERATE] JWT_SECRET (primeros 20 chars):', secret.substring(0, 20) + '...')
+  console.log('[GENERATE] Generando token para usuario:', userId, 'con rol:', role)
+
+  const token = jwt.sign({ userId, email, role }, secret, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  } as SignOptions)
+
+  console.log('[GENERATE] Token generado (primeros 20 chars):', token.substring(0, 20) + '...')
+
+  return token
 }
 
 /**

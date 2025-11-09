@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expiresAt,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || null,
-    });
+    }).onConflictDoNothing();
 
     // Retornar usuario y token (sin datos sensibles)
     res.status(201).json({

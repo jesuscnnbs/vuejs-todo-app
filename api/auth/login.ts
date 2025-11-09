@@ -14,6 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('[LOGIN] Iniciando proceso de login');
     const { email, password } = req.body;
 
     // Validar campos requeridos
@@ -26,9 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Formato de email inválido' });
     }
 
+    console.log('[LOGIN] Conectando a base de datos');
     const db = getDb();
 
     // Buscar usuario por email
+    console.log('[LOGIN] Buscando usuario:', email);
     const user = await db.query.users.findFirst({
       where: eq(users.email, email.toLowerCase()),
     });
@@ -36,42 +39,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Usuario no encontrado o contraseña incorrecta
     // Usamos el mismo mensaje para ambos casos por seguridad
     if (!user) {
+      console.log('[LOGIN] Usuario no encontrado');
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
+    console.log('[LOGIN] Usuario encontrado, ID:', user.id);
+
     // Verificar si el usuario está activo
     if (!user.isActive) {
+      console.log('[LOGIN] Usuario inactivo');
       return res.status(403).json({ error: 'Cuenta desactivada. Contacta al administrador' });
     }
 
     // Verificar contraseña
+    console.log('[LOGIN] Verificando contraseña');
     const isPasswordValid = await verifyPassword(password, user.passwordHash);
 
     if (!isPasswordValid) {
+      console.log('[LOGIN] Contraseña inválida');
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
     // Actualizar último login
+    console.log('[LOGIN] Actualizando último login');
     await db
       .update(users)
       .set({ lastLogin: new Date() })
       .where(eq(users.id, user.id));
 
     // Generar token JWT
+    console.log('[LOGIN] Generando token JWT');
     const token = generateToken(user.id, user.email, user.role);
 
     // Calcular fecha de expiración
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Guardar sesión en la base de datos
+    // Guardar sesión en la base de datos (o actualizar si ya existe)
+    console.log('[LOGIN] Guardando sesión en base de datos');
     await db.insert(sessions).values({
       userId: user.id,
       token,
       expiresAt,
       userAgent: req.headers['user-agent'] || null,
       ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0] || null,
-    });
+    }).onConflictDoNothing();
+
+    console.log('[LOGIN] Login exitoso para usuario:', user.id);
 
     // Retornar datos del usuario (sin contraseña) y token
     res.status(200).json({
@@ -87,7 +101,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('[LOGIN] Error en login:', error);
+    console.error('[LOGIN] Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 }

@@ -11,6 +11,8 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "test:unit": "vitest",
+    "test:api": "vitest --config vitest.config.api.ts",
+    "test:api:run": "vitest run --config vitest.config.api.ts",
     "test:e2e": "playwright test",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
