@@ -27,6 +27,11 @@ export function useApi() {
   apiClient.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
+      // Ignorar errores de cancelación
+      if (axios.isCancel(error)) {
+        return Promise.reject(error)
+      }
+
       if (error.response?.status === 401) {
         // Token expirado o inválido
         authStore.logout()

@@ -47,31 +47,17 @@ const handleAddTodo = async () => {
   }
 }
 
-const handleToggle = async (id: number) => {
-  const todo = todosStore.todos.find((t) => t.id === id)
-  if (!todo) return
-
-  await todosStore.updateTodo(id, { completed: !todo.completed })
-}
-
-const handleDelete = async (id: number) => {
-  if (confirm('Are you sure you want to delete this todo?')) {
-    await todosStore.deleteTodo(id)
-  }
-}
-
-const handleEdit = async (todo: any) => {
-  await todosStore.updateTodo(todo.id, {
-    title: todo.title,
-    description: todo.description,
-  })
+const handleCancelAdd = () => {
+  showAddForm.value = false
+  newTitle.value = ''
+  newDescription.value = ''
 }
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Header with Stats -->
-    <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+    <div class="stats stats-vertical lg:stats-horizontal shadow w-full border-primary/20 border">
       <div class="stat">
         <div class="stat-title">Total Tasks</div>
         <div class="stat-value text-primary">{{ stats.total }}</div>
@@ -144,18 +130,8 @@ const handleEdit = async (todo: any) => {
           </div>
 
           <div class="flex gap-2">
-            <BaseButton type="submit" variant="primary" :loading="loading" class="flex-1">
-              Add Task
-            </BaseButton>
-            <BaseButton
-              type="button"
-              variant="ghost"
-              @click="
-                showAddForm = false
-                newTitle = ''
-                newDescription = ''
-              "
-            >
+            <BaseButton type="submit" variant="primary" :loading="loading"> Add Task </BaseButton>
+            <BaseButton type="button" variant="info" outline @click="handleCancelAdd">
               Cancel
             </BaseButton>
           </div>
@@ -189,30 +165,22 @@ const handleEdit = async (todo: any) => {
     <div v-if="filteredTodos.length === 0" class="text-center py-12">
       <svg
         xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
         class="h-16 w-16 mx-auto text-base-content/20"
         fill="none"
-        viewBox="0 0 24 24"
         stroke="currentColor"
       >
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
-          stroke-width="2"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
         />
       </svg>
       <p class="text-base-content/60 mt-4">No tasks found</p>
     </div>
 
     <div v-else class="space-y-3">
-      <TodoItem
-        v-for="todo in filteredTodos"
-        :key="todo.id"
-        :todo="todo"
-        @toggle="handleToggle"
-        @delete="handleDelete"
-        @edit="handleEdit"
-      />
+      <TodoItem v-for="todo in filteredTodos" :key="todo.id" :todo="todo" />
     </div>
   </div>
 </template>

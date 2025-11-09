@@ -2,7 +2,16 @@
 import { computed } from 'vue'
 
 interface Props {
-  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'link' | 'error' | 'success' | 'warning' | 'info'
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'accent'
+    | 'ghost'
+    | 'link'
+    | 'error'
+    | 'success'
+    | 'warning'
+    | 'info'
   size?: 'xs' | 'sm' | 'md' | 'lg'
   outline?: boolean
   loading?: boolean
@@ -29,17 +38,15 @@ const buttonClasses = computed(() => {
     props.outline && 'btn-outline',
     props.loading && 'loading',
     props.block && 'btn-block',
-  ].filter(Boolean).join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 })
 </script>
 
 <template>
-  <button
-    :type="type"
-    :class="buttonClasses"
-    :disabled="disabled || loading"
-  >
+  <button :type="type" :class="buttonClasses" :disabled="disabled || loading">
     <span v-if="loading" class="loading loading-spinner"></span>
-    <slot />
+    <slot></slot>
   </button>
 </template>

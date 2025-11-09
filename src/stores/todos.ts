@@ -62,12 +62,11 @@ export const useTodosStore = defineStore('todos', () => {
   /**
    * Actualizar una tarea existente
    */
-  async function updateTodo(id: number, updates: UpdateTodoInput) {
+  async function updateTodo(id: number, updates: UpdateTodoInput, signal?: AbortSignal) {
     try {
-      loading.value = true
       error.value = null
 
-      const response = await apiClient.put(`/todos/${id}`, updates)
+      const response = await apiClient.put(`/todos/${id}`, updates, { signal })
       const updatedTodo = response.data.todo
 
       const index = todos.value.findIndex((t) => t.id === id)
@@ -75,38 +74,41 @@ export const useTodosStore = defineStore('todos', () => {
         todos.value[index] = updatedTodo
       }
     } catch (err: any) {
+      // No mostrar error si fue cancelado
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return
+      }
       error.value = err.response?.data?.error || 'Error actualizando tarea'
       throw err
-    } finally {
-      loading.value = false
     }
   }
 
   /**
    * Toggle estado completado de una tarea
    */
-  async function toggleTodo(id: number) {
+  async function toggleTodo(id: number, signal?: AbortSignal) {
     const todo = todos.value.find((t) => t.id === id)
     if (!todo) return
 
-    await updateTodo(id, { completed: !todo.completed })
+    await updateTodo(id, { completed: !todo.completed }, signal)
   }
 
   /**
    * Eliminar una tarea
    */
-  async function deleteTodo(id: number) {
+  async function deleteTodo(id: number, signal?: AbortSignal) {
     try {
-      loading.value = true
       error.value = null
 
-      await apiClient.delete(`/todos/${id}`)
+      await apiClient.delete(`/todos/${id}`, { signal })
       todos.value = todos.value.filter((t) => t.id !== id)
     } catch (err: any) {
+      // No mostrar error si fue cancelado
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        return
+      }
       error.value = err.response?.data?.error || 'Error eliminando tarea'
       throw err
-    } finally {
-      loading.value = false
     }
   }
 

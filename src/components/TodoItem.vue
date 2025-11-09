@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useTodosStore } from '@/stores/todos'
 
 interface Todo {
   id: number
@@ -15,18 +16,30 @@ interface Props {
   todo: Todo
 }
 
-interface Emits {
-  (e: 'toggle', id: number): void
-  (e: 'delete', id: number): void
-  (e: 'edit', todo: Todo): void
-}
-
 const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const todosStore = useTodosStore()
 
+// Estados locales
 const isEditing = ref(false)
 const editTitle = ref(props.todo.title)
 const editDescription = ref(props.todo.description || '')
+const isToggling = ref(false)
+const isDeleting = ref(false)
+const isSaving = ref(false)
+
+// Estado optimista para el checkbox
+const localCompleted = ref(props.todo.completed)
+
+// Sincronizar con props cuando cambie desde el store
+watch(
+  () => props.todo.completed,
+  (newVal) => {
+    localCompleted.value = newVal
+  },
+)
+
+// AbortController para cancelar peticiones previas
+let toggleAbortController: AbortController | null = null
 
 const priorityColors = {
   low: 'badge-info',
@@ -34,19 +47,74 @@ const priorityColors = {
   high: 'badge-error',
 }
 
-const handleEdit = () => {
+// Toggle con cancelación de peticiones previas y UI optimista
+const handleToggle = async () => {
+  // Actualización optimista - cambiar inmediatamente el estado local
+  const newCompletedState = !localCompleted.value
+  localCompleted.value = newCompletedState
+
+  // Cancelar petición anterior si existe
+  if (toggleAbortController) {
+    toggleAbortController.abort()
+  }
+
+  // Crear nuevo AbortController
+  toggleAbortController = new AbortController()
+
+  try {
+    isToggling.value = true
+    await todosStore.updateTodo(
+      props.todo.id,
+      { completed: newCompletedState },
+      toggleAbortController.signal,
+    )
+  } catch (err: any) {
+    // Si falla (no cancelado), revertir el estado local
+    if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+      localCompleted.value = !newCompletedState
+      console.error('Error toggling todo:', err)
+    }
+  } finally {
+    isToggling.value = false
+  }
+}
+
+// Eliminar
+const handleDelete = async () => {
+  if (!confirm('¿Estás seguro de eliminar esta tarea?')) return
+
+  try {
+    isDeleting.value = true
+    await todosStore.deleteTodo(props.todo.id)
+  } catch (err) {
+    console.error('Error deleting todo:', err)
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+// Editar
+const startEdit = () => {
   isEditing.value = true
   editTitle.value = props.todo.title
   editDescription.value = props.todo.description || ''
 }
 
-const saveEdit = () => {
-  emit('edit', {
-    ...props.todo,
-    title: editTitle.value,
-    description: editDescription.value,
-  })
-  isEditing.value = false
+const saveEdit = async () => {
+  if (!editTitle.value.trim()) return
+
+  try {
+    isSaving.value = true
+    await todosStore.updateTodo(props.todo.id, {
+      title: editTitle.value,
+      description: editDescription.value,
+    })
+    isEditing.value = false
+  } catch (err) {
+    console.error('Error updating todo:', err)
+  } finally {
+    isSaving.value = false
+  }
 }
 
 const cancelEdit = () => {
@@ -57,7 +125,9 @@ const cancelEdit = () => {
 </script>
 
 <template>
-  <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
+  <div
+    class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-b border-primary/50"
+  >
     <div class="card-body p-4">
       <!-- Edit Mode -->
       <template v-if="isEditing">
@@ -74,8 +144,13 @@ const cancelEdit = () => {
           rows="2"
         ></textarea>
         <div class="flex gap-2">
-          <button @click="saveEdit" class="btn btn-primary btn-sm">Save</button>
-          <button @click="cancelEdit" class="btn btn-ghost btn-sm">Cancel</button>
+          <button @click="saveEdit" class="btn btn-primary btn-sm" :disabled="isSaving">
+            <span v-if="isSaving" class="loading loading-spinner loading-xs"></span>
+            {{ isSaving ? 'Saving...' : 'Save' }}
+          </button>
+          <button @click="cancelEdit" class="btn btn-ghost btn-sm" :disabled="isSaving">
+            Cancel
+          </button>
         </div>
       </template>
 
@@ -85,8 +160,8 @@ const cancelEdit = () => {
           <!-- Checkbox -->
           <input
             type="checkbox"
-            :checked="todo.completed"
-            @change="emit('toggle', todo.id)"
+            :checked="localCompleted"
+            @change="handleToggle"
             class="checkbox checkbox-primary mt-1"
           />
 
@@ -117,8 +192,13 @@ const cancelEdit = () => {
 
           <!-- Actions -->
           <div class="dropdown dropdown-end">
-            <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-sm px-2">
+              <span
+                v-if="isDeleting || isToggling"
+                class="loading loading-spinner loading-sm"
+              ></span>
               <svg
+                v-else
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -137,8 +217,8 @@ const cancelEdit = () => {
               tabindex="0"
               class="dropdown-content menu bg-base-100 rounded-box z-1 w-32 p-2 shadow"
             >
-              <li><a @click="handleEdit">Edit</a></li>
-              <li><a @click="emit('delete', todo.id)" class="text-error">Delete</a></li>
+              <li><a @click="startEdit">Edit</a></li>
+              <li><a @click="handleDelete" class="text-error">Delete</a></li>
             </ul>
           </div>
         </div>
